@@ -200,7 +200,7 @@
             <li><a href="#methods">Methodologies (3)</a></li>
             <li><a href="#code">System Architecture</a></li>
             <li><a href="#comparison">Comparative Results</a></li>
-            <li><a href="#discussion">Findings</a></li>
+            <li><a href="#discussion">Findings & Future Work</a></li>
         </ul>
     </nav>
 
@@ -212,86 +212,256 @@
             </div>
             <p><strong>CS 566 Course Project | Fall 2025</strong></p>
             <p>
-                This project implements a comprehensive image generation pipeline designed to create novel Pokémon art. 
-                We investigated the transition from low-fidelity pixel fusion to high-fidelity artistic rendering by implementing 
-                and comparing three distinct deep learning approaches: <strong>VGG19 Style Transfer</strong>, <strong>CycleGAN</strong>, and <strong>Stable Diffusion</strong>.
+                This project implements a two-stage image generation pipeline for creating novel Pokémon art.
+                We start from low-fidelity sprite fusions and then “lift” them into high-fidelity illustrations
+                using modern deep learning based style-transfer and generative models.
             </p>
+
+            <h3>Motivation</h3>
+            <p>
+                Fan-made Pokémon fusions are popular, but most tools simply copy–paste sprite parts together.
+                The results often look visually inconsistent: color palettes clash, shading is broken, and
+                silhouettes are awkward. At the same time, state-of-the-art generative models like Stable Diffusion
+                can create stunning artwork—but they are rarely connected to carefully designed sprite-level logic.
+            </p>
+            <p>
+                Our goal is to build a system that respects both sides: 
+                <strong>(1)</strong> preserve the structural logic of sprite fusions and 
+                <strong>(2)</strong> leverage deep models to generate polished, high-resolution art.
+            </p>
+
+            <h3>Research Questions</h3>
+            <ul>
+                <li>How far can rule-based pixel fusion go in producing coherent sprite fusions?</li>
+                <li>How well do different style transfer paradigms (VGG19 NST, CycleGAN, Stable Diffusion) handle pixel art inputs?</li>
+                <li>What are the trade-offs between structure preservation and artistic richness?</li>
+            </ul>
         </header>
 
         <section id="pipeline">
             <h2>The Core Pipeline</h2>
             <p>
-                Our system operates in two distinct stages. The goal is to first ensure structural logic using algorithmic rules, 
-                and then achieve artistic fidelity using deep learning.
+                Our system operates in two major stages. Stage 1 ensures that the fused sprite is structurally
+                and chromatically coherent. Stage 2 then applies one of three deep learning methods to convert
+                this low-resolution fusion into a high-fidelity illustration.
             </p>
+
             <h3>Stage 1: Coherent Pixel Fusion</h3>
             <p>
-                Before applying AI, we generate a structurally sound base. We implemented a rule-based algorithm that:
+                Before applying AI models, we generate a structurally sound base image from two input Pokémon sprites.
+                This stage is fully deterministic: the same pair (and seed) always produces the same fusion.
+                The fusion algorithm performs:
             </p>
             <ul>
-                <li><strong>Segments</strong> sprites into logical parts (head/body/limbs).</li>
-                <li><strong>Harmonizes</strong> palettes by extracting top-K colors and merging them in OKLCH space to prevent color clashing.</li>
-                <li><strong>Smoothes</strong> seams using edge-aware feathering.</li>
+                <li>
+                    <strong>Part-based composition:</strong> 
+                    Each input sprite is segmented into logical parts (e.g., head, body, limbs, accessories).
+                    We place these parts using simple anchor points (such as head center and torso center)
+                    to avoid jarring overlaps or gaps.
+                </li>
+                <li>
+                    <strong>Palette harmonization:</strong> 
+                    We extract the top-K colors from both sprites and merge them in a perceptual color space
+                    (e.g., OKLCH/CIELAB). We then adjust saturation and contrast to avoid extremely clashing
+                    combinations such as neon green against very dark red.
+                </li>
+                <li>
+                    <strong>Seam smoothing & shading consistency:</strong> 
+                    Where two parts meet, we use edge-aware feathering to soften seams. We also enforce a
+                    single, consistent “light direction” for the sprite to avoid conflicting highlights and shadows.
+                </li>
             </ul>
+            <p>
+                This produces a fused pixel-art sprite that still “reads” as a Pokémon: clear outline, consistent
+                palette, and a plausible silhouette. The output of Stage 1 becomes the content input for Stage 2.
+            </p>
+
+            <div class="figure">
+                <img src="Figure_1.png" alt="High-Level Project Pipeline">
+                <div class="caption">
+                    Figure 1: High-level pipeline. Stage 1 produces a coherent fused sprite; Stage 2 applies one of three deep-learning methods.
+                </div>
+            </div>
         </section>
 
         <section id="methods">
             <h2>Stage 2 Methodologies: A Comparative Study</h2>
-            <p>We implemented three different architectures to lift the pixel art into high-fidelity illustrations.</p>
+            <p>
+                In Stage 2, we explore three different families of models to “upscale” the fused sprite into
+                higher fidelity art. For each method, we treat the Stage 1 fusion as a content signal and try
+                to inject richer style information from other domains.
+            </p>
+
+            <h3>Training Data & Experimental Setup</h3>
+            <p>
+                We use separate datasets and pipelines for the three methods:
+            </p>
+            <ul>
+                <li>
+                    <strong>VGG19 Neural Style Transfer:</strong>
+                    A folder of fused sprites (<code>content_images/</code>) and a small library of style
+                    references (<code>style_images/</code>, e.g., anime art, paintings). We run NST for all
+                    style–content combinations to systematically inspect failure modes.
+                </li>
+                <li>
+                    <strong>CycleGAN:</strong>
+                    An unpaired dataset with <code>trainA/</code> (pixel sprites) and <code>trainB/</code> 
+                    (target digital art style). No one-to-one pairing is assumed, so the model must learn the
+                    mapping “sprite → art” only from distribution statistics.
+                </li>
+                <li>
+                    <strong>Stable Diffusion:</strong>
+                    For Stable Diffusion, we do not train anything from scratch. Instead, we use a pre-trained
+                    image-to-image pipeline and combine the fused sprite with text prompts such as 
+                    <em>“anime style, detailed, 3D render”</em>.
+                </li>
+            </ul>
 
             <h3>Method A: VGG19 Neural Style Transfer</h3>
             <p>
-                Our baseline approach utilized a pre-trained VGG19 network. We optimized an input noise image to match the 
-                content features of the sprite and the style features of an artistic reference (e.g., "Starry Night").
+                Our baseline approach uses a pre-trained VGG19 network and optimizes the pixels of an input image directly.
+                We follow the classic NST formulation: the fused sprite provides <em>content</em> features, while separate
+                artworks provide <em>style</em> features.
             </p>
             <ul>
-                <li><strong>Loss Functions:</strong> Content Loss (MSE), Style Loss (Gram Matrix), and Total Variation Loss.</li>
-                <li><strong>Result:</strong> Struggled with high-frequency noise and transparency artifacts.</li>
+                <li>
+                    <strong>Loss Functions:</strong> 
+                    We combine content loss (MSE on feature activations), style loss (MSE on Gram matrices)
+                    and a <code>TVLoss</code> term to encourage spatial smoothness.
+                </li>
+                <li>
+                    <strong>Implementation details:</strong> 
+                    The script <code>style_transfer.py</code> batch-processes all 
+                    <code>(style, content)</code> pairs, runs ~300 optimization steps per image, and saves
+                    outputs to a style-specific folder (e.g., <code>output_images/opt_vgg19_star_anime/...</code>).
+                </li>
+                <li>
+                    <strong>Observed behavior:</strong> 
+                    On photographic content, the method works as expected. On pixel sprites, however, the model often
+                    produces “dirty” textures, washed-out outlines, and artifacts around what used to be flat color regions.
+                </li>
             </ul>
 
             <h3>Method B: CycleGAN (Unpaired Translation)</h3>
             <p>
-                We trained a CycleGAN to learn the mapping between the domain of "Pixel Sprites" and "Digital Art" without 
-                paired training examples.
+                To avoid hand-crafting a style loss, we train a CycleGAN to learn the mapping between 
+                <em>“pixel sprite domain”</em> and <em>“digital art domain”</em> in an unpaired fashion.
+                The generator learns to redraw sprite-like content using the target art style.
             </p>
             <ul>
-                <li><strong>Architecture:</strong> ResNet-based Generator with 9 residual blocks and a PatchGAN Discriminator.</li>
-                <li><strong>Training:</strong> Uses Cycle Consistency Loss to ensure the image can be translated back to its original form, preserving structure.</li>
+                <li>
+                    <strong>Architecture:</strong> 
+                    We use a ResNet-based generator (<code>GeneratorResNet</code>) with 9 residual blocks and a
+                    PatchGAN discriminator (<code>Discriminator</code>) as implemented in <code>cyclegan_train.py</code>.
+                </li>
+                <li>
+                    <strong>Losses:</strong> 
+                    Standard GAN loss, cycle consistency loss (to ensure that A → B → A returns a sprite-like image), and
+                    identity loss (to keep colors stable when images are already in the target domain).
+                </li>
+                <li>
+                    <strong>Training loop:</strong> 
+                    The training script uses replay buffers to stabilize discriminator updates and periodically checkpoints
+                    the generator weights (e.g., <code>model/G_AB_10.pth</code>, <code>model/G_AB_20.pth</code>, …).
+                    The script <code>cyclegan_gen.py</code> then runs batch inference over all saved checkpoints to evaluate
+                    how the style evolves over training.
+                </li>
+                <li>
+                    <strong>Observed behavior:</strong> 
+                    CycleGAN does a better job than VGG19 at preserving sprite outlines, but sometimes hallucinates
+                    repetitive patterns or over-smooths small details like eyes and fingers.
+                </li>
             </ul>
 
             <h3>Method C: Stable Diffusion (Latent Diffusion)</h3>
             <p>
-                Our final approach leveraged a Latent Diffusion Model (LDM). We used the <code>StableDiffusionImg2ImgPipeline</code> 
-                to guide the generation using both the pixel fusion (as the init image) and a text prompt.
+                Our final method uses a pre-trained Latent Diffusion Model, <strong>Stable Diffusion</strong>, in
+                image-to-image mode. Rather than optimizing pixels from scratch or training a GAN, we treat the fused
+                sprite as a noisy “hint” and let the model generate an image consistent with both the sprite and
+                a text prompt.
             </p>
             <ul>
-                <li><strong>Configuration:</strong> Strength 0.75, Guidance Scale 7.5.</li>
-                <li><strong>Advantage:</strong> The model "hallucinates" realistic details (fur, lighting, 3D form) that are not present in the original pixels.</li>
+                <li>
+                    <strong>Configuration:</strong> 
+                    Using <code>StableDiffusionImg2ImgPipeline</code>, we control two key hyperparameters:
+                    <em>strength</em> (how much to deviate from the input sprite) and
+                    <em>guidance scale</em> (how strongly the text prompt steers the image).
+                </li>
+                <li>
+                    <strong>CLI & backend usage:</strong> 
+                    The script <code>ai_fusion.py</code> allows us to run fusions from the command line
+                    (two image paths in, one fusion image out), while <code>fusion_server.py</code> exposes a Flask API 
+                    so that the web UI can send sprite pairs and get back rendered fusions.
+                </li>
+                <li>
+                    <strong>Observed behavior:</strong> 
+                    Stable Diffusion tends to produce the most visually appealing results. It can add shading, volume and
+                    texture (fur, scales, reflections) that are not present in the original sprites, while still
+                    roughly preserving the fused creature’s silhouette.
+                </li>
             </ul>
         </section>
 
         <section id="code">
             <h2>System Architecture & Code Structure</h2>
-            <p>The project is modularized into the following key components:</p>
+            <p>
+                The project is organized into modular Python scripts, separating offline experiments from the
+                interactive web demo.
+            </p>
+
+            <h3>Offline Experimentation Scripts</h3>
 
             <div class="code-box">
                 <span class="code-title">style_transfer.py</span>
-                Implements the VGG19 optimization loop. Features a custom <code>TVLoss</code> class to reduce pixel noise and a normalization module to handle ImageNet stats.
+                Batch Neural Style Transfer with VGG19. Implements custom <code>ContentLoss</code>,
+                <code>StyleLoss</code>, and <code>TVLoss</code> modules, and loops over all content–style
+                combinations to generate grids of NST results.
             </div>
 
             <div class="code-box">
-                <span class="code-title">cyclegan_train.py & cyclegan_gen.py</span>
-                Contains the <code>GeneratorResNet</code> and <code>Discriminator</code> (PatchGAN) classes. Implements the training loop with Replay Buffers to stabilize GAN training.
+                <span class="code-title">cyclegan_train.py</span>
+                Full CycleGAN training loop. Contains <code>GeneratorResNet</code>, 
+                <code>Discriminator</code>, the unpaired <code>ImageDataset</code>, and a 
+                <code>ReplayBuffer</code> for stabilizing adversarial training. Saves generator
+                checkpoints to the <code>model/</code> directory.
             </div>
+
+            <div class="code-box">
+                <span class="code-title">cyclegan_gen.py</span>
+                Loads each saved <code>G_AB_*.pth</code> model in turn and runs batch inference over
+                input sprites in <code>content/</code>. Outputs are grouped by epoch to compare how
+                the generator’s style changes throughout training.
+            </div>
+
+            <div class="code-box">
+                <span class="code-title">ai_fusion.py</span>
+                Command-line Stable Diffusion image-to-image fusion. Accepts two input images and
+                parameters like <code>--strength</code> and <code>--guidance</code>, then saves a
+                high-fidelity fusion image to disk.
+            </div>
+
+            <h3>Web Backend</h3>
 
             <div class="code-box">
                 <span class="code-title">fusion_server.py</span>
-                A Flask-based backend that serves the Web UI. It loads the <code>StableDiffusionImg2ImgPipeline</code> on CUDA/MPS and handles requests to fuse uploaded images via API.
+                Flask-based backend for the interactive demo. Loads the Stable Diffusion pipeline once
+                at startup, exposes <code>/api/samples</code> for listing gallery sprites and
+                <code>/api/fuse</code> for generating fusions from either sample sprites or user uploads.
             </div>
+
+            <p>
+                On top of this backend, a simple JavaScript front-end allows users to pick Pokémon A/B,
+                adjust prompts and hyperparameters, and view/download the generated fusions in the browser.
+            </p>
         </section>
 
         <section id="comparison">
             <h2>Comparative Results</h2>
+            <p>
+                We qualitatively compare the three methods along four dimensions: structure preservation,
+                texture quality, inference time, and overall aesthetic. The fused sprites from Stage 1 are
+                used as the common input across all methods.
+            </p>
             
             <table>
                 <thead>
@@ -305,62 +475,116 @@
                 <tbody>
                     <tr>
                         <td><strong>Structure Preservation</strong></td>
-                        <td>High (Too rigid)</td>
-                        <td>Medium</td>
-                        <td>High (Adjustable)</td>
+                        <td>High (but rigid and sometimes distorted during optimization)</td>
+                        <td>Medium (good outlines but occasional warping)</td>
+                        <td>High (can be tuned via strength)</td>
                     </tr>
                     <tr>
                         <td><strong>Texture Quality</strong></td>
-                        <td>Low (Noisy)</td>
-                        <td>Medium (Patterned)</td>
-                        <td>Very High (Realistic)</td>
+                        <td>Low (noisy, “dirty” textures on flat regions)</td>
+                        <td>Medium (stylized but sometimes repetitive patterns)</td>
+                        <td>Very High (rich shading, materials, lighting)</td>
                     </tr>
                     <tr>
                         <td><strong>Inference Time</strong></td>
-                        <td>Slow (Iterative)</td>
-                        <td>Fast (One-pass)</td>
-                        <td>Medium (Diffusion steps)</td>
+                        <td>Slow (hundreds of optimization steps per image)</td>
+                        <td>Fast (one forward pass after training)</td>
+                        <td>Medium (tens of diffusion steps per image)</td>
                     </tr>
                     <tr>
                         <td><strong>Overall Aesthetic</strong></td>
-                        <td>"Dirty" / Abstract</td>
-                        <td>Stylized</td>
-                        <td>Polished / 3D</td>
+                        <td>Abstract, often messy</td>
+                        <td>Stylized but inconsistent</td>
+                        <td>Polished, “finished” illustrations</td>
                     </tr>
                 </tbody>
             </table>
 
             <div class="figure">
                 <img src="https://via.placeholder.com/800x400?text=Comparison:+VGG19+vs+CycleGAN+vs+Stable+Diffusion" alt="Visual Comparison">
-                <div class="caption">Figure 1: Visual comparison of the three implemented methods on the same input fusion.</div>
+                <div class="caption">
+                    Figure 2: Example fusions from the three methods on the same Stage 1 sprite input.
+                </div>
             </div>
         </section>
 
         <section id="discussion">
-            <h2>Discussion & Findings</h2>
+            <h2>Discussion, Problems Encountered & Future Work</h2>
             
             <h3>The Frequency Mismatch Problem</h3>
             <p>
-                Our initial experiments with VGG19 confirmed that standard style transfer struggles with pixel art. 
-                Pixel sprites are "low-frequency" images (flat colors), while VGG19 is trained on "high-frequency" photos (ImageNet). 
-                The model failed to find features to latch onto, resulting in noise.
+                A recurring issue with VGG19 NST is the mismatch between training data and our inputs. 
+                VGG19 was trained on natural photographs, which are rich in high-frequency detail.
+                Our sprites, however, are low-resolution and dominated by large, flat regions of solid color.
+                As a result, the style loss encourages the model to inject artificial noise where no meaningful
+                high-level features exist, breaking the clean pixel-art aesthetic.
             </p>
 
-            <h3>The Superiority of Latent Diffusion</h3>
+            <h3>GAN Training Instability</h3>
             <p>
-                We found that <strong>Stable Diffusion (Method C)</strong> provided the best results for this specific task. 
-                Because it operates in latent space and utilizes a text prompt (e.g., <em>"anime style, detailed, 3D render"</em>), 
-                it acts as a "semantic upscaler." It understands what the blob of pixels <em>represents</em> and fills in the missing details 
-                that VGG19 could not invent.
+                CycleGAN training surfaces classic GAN issues: mode collapse, sensitivity to hyperparameters,
+                and the need for a reasonably large and diverse dataset. Even with replay buffers and
+                cycle consistency, some epochs produce over-smoothed images or artifacts. We also observed
+                that small tweaks to the learning rate or normalization strategy can substantially change the
+                behavior of the generators and discriminators.
             </p>
+
+            <h3>Practical Challenges</h3>
+            <ul>
+                <li><strong>Compute & memory:</strong> 
+                    Running VGG19 NST and Stable Diffusion at reasonably high resolutions required careful
+                    management of batch sizes and image dimensions to fit within GPU/CPU memory limits.
+                </li>
+                <li><strong>Data preparation:</strong> 
+                    Handling transparent PNGs correctly (especially for sprites) was non-trivial. We had to
+                    standardize backgrounds and resolutions across all scripts.
+                </li>
+                <li><strong>Licensing concerns:</strong> 
+                    For a public-facing demo, we would need to replace copyrighted Pokémon sprites with either
+                    original assets or properly licensed “Pokémon-like” creatures.
+                </li>
+            </ul>
+
+            <h3>The Superiority of Latent Diffusion (For This Task)</h3>
+            <p>
+                Overall, Stable Diffusion provided the most compelling results. Its latent-space representation,
+                combined with text prompts, lets it act as a semantic upscaler: it understands what the fused sprite
+                is <em>supposed</em> to be (e.g., a dragon-like creature with wings and fire) and fills in plausible
+                details that are impossible to obtain with fixed VGG19 features or an unpaired CycleGAN alone.
+            </p>
+
+            <h3>Future Work</h3>
+            <ul>
+                <li>
+                    <strong>Better sprite-aware models:</strong> 
+                    Explore fine-tuning diffusion models on sprite-style art so that the outputs preserve more of the
+                    pixel-art aesthetic instead of always pushing toward “3D render” realism.
+                </li>
+                <li>
+                    <strong>Interactive user controls:</strong> 
+                    Let users mix styles (e.g., 50% watercolor, 50% anime), or lock certain regions (like the face)
+                    to preserve key features from the original sprites.
+                </li>
+                <li>
+                    <strong>User study:</strong> 
+                    Run a small user study comparing raw sprite fusions, CycleGAN outputs, and Stable Diffusion
+                    outputs on perceived quality, recognizability, and “Pokémon-ness.”
+                </li>
+            </ul>
         </section>
 
         <footer>
             <p>CS 566 Course Project | Fall 2025</p>
+            <p>
+                <a href="https://github.com/TonyGuo30/Pokemon-Fusion-Art-Generator" target="_blank" rel="noopener noreferrer">
+                    GitHub Link to our project
+                </a>
+            </p>
         </footer>
     </main>
 
     <script>
+        // Smooth scrolling for sidebar anchors
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
