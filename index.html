@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon Fusion Art Generator - CS 566 Project</title>
+    <style>
+        :root {
+            --primary-color: #EE1515; /* Pokémon Red */
+            --secondary-color: #222224; /* Dark Gray */
+            --accent-color: #3B4CCA; /* Pokemon Blue */
+            --bg-color: #f8f9fa;
+            --text-color: #333;
+            --sidebar-width: 280px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            margin: 0;
+            background-color: var(--bg-color);
+            display: flex;
+        }
+
+        /* Sidebar Navigation */
+        nav {
+            width: var(--sidebar-width);
+            background-color: var(--secondary-color);
+            color: white;
+            height: 100vh;
+            position: fixed;
+            padding: 2rem 1rem;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        nav h3 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        nav li {
+            margin-bottom: 15px;
+        }
+
+        nav a {
+            color: #ccc;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+            display: block;
+            padding: 5px 0;
+        }
+
+        nav a:hover {
+            color: white;
+            padding-left: 5px;
+        }
+
+        /* Main Content */
+        main {
+            margin-left: var(--sidebar-width);
+            padding: 4rem;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        header {
+            margin-bottom: 4rem;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--secondary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            margin-top: 3rem;
+            font-size: 1.8rem;
+            border-left: 5px solid var(--primary-color);
+            padding-left: 15px;
+        }
+
+        h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5rem;
+            font-weight: 600;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            text-align: justify;
+        }
+
+        ul {
+            margin-bottom: 1rem;
+        }
+
+        code {
+            background-color: #e9ecef;
+            padding: 2px 4px;
+            border-radius: 4px;
+            color: #d63384;
+            font-family: monospace;
+        }
+
+        .team-members {
+            font-size: 1.1rem;
+            color: #666;
+            font-style: italic;
+        }
+
+        /* Callout Boxes for Code Files */
+        .code-box {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-left: 4px solid #28a745;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        .code-title {
+            font-weight: bold;
+            color: #28a745;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        /* Comparison Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        /* Image Placeholders */
+        .figure {
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .figure img {
+            max-width: 100%;
+            height: auto;
+            background-color: #eee;
+            min-height: 200px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .caption {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+            font-style: italic;
+        }
+
+        footer {
+            margin-top: 4rem;
+            font-size: 0.9rem;
+            color: #888;
+            border-top: 1px solid #ddd;
+            padding-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <h3>Project Navigation</h3>
+        <ul>
+            <li><a href="#overview">Overview</a></li>
+            <li><a href="#pipeline">The Pipeline</a></li>
+            <li><a href="#methods">Methodologies (3)</a></li>
+            <li><a href="#code">System Architecture</a></li>
+            <li><a href="#comparison">Comparative Results</a></li>
+            <li><a href="#discussion">Findings</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <header id="overview">
+            <h1>Pokémon Fusion Art Generator</h1>
+            <div class="team-members">
+                Team Members: Tony Guo, Zhiyi Lai, Hua Zhou
+            </div>
+            <p><strong>CS 566 Course Project | Fall 2025</strong></p>
+            <p>
+                This project implements a comprehensive image generation pipeline designed to create novel Pokémon art. 
+                We investigated the transition from low-fidelity pixel fusion to high-fidelity artistic rendering by implementing 
+                and comparing three distinct deep learning approaches: <strong>VGG19 Style Transfer</strong>, <strong>CycleGAN</strong>, and <strong>Stable Diffusion</strong>.
+            </p>
+        </header>
+
+        <section id="pipeline">
+            <h2>The Core Pipeline</h2>
+            <p>
+                Our system operates in two distinct stages. The goal is to first ensure structural logic using algorithmic rules, 
+                and then achieve artistic fidelity using deep learning.
+            </p>
+            <h3>Stage 1: Coherent Pixel Fusion</h3>
+            <p>
+                Before applying AI, we generate a structurally sound base. We implemented a rule-based algorithm that:
+            </p>
+            <ul>
+                <li><strong>Segments</strong> sprites into logical parts (head/body/limbs).</li>
+                <li><strong>Harmonizes</strong> palettes by extracting top-K colors and merging them in OKLCH space to prevent color clashing.</li>
+                <li><strong>Smoothes</strong> seams using edge-aware feathering.</li>
+            </ul>
+        </section>
+
+        <section id="methods">
+            <h2>Stage 2 Methodologies: A Comparative Study</h2>
+            <p>We implemented three different architectures to lift the pixel art into high-fidelity illustrations.</p>
+
+            <h3>Method A: VGG19 Neural Style Transfer</h3>
+            <p>
+                Our baseline approach utilized a pre-trained VGG19 network. We optimized an input noise image to match the 
+                content features of the sprite and the style features of an artistic reference (e.g., "Starry Night").
+            </p>
+            <ul>
+                <li><strong>Loss Functions:</strong> Content Loss (MSE), Style Loss (Gram Matrix), and Total Variation Loss.</li>
+                <li><strong>Result:</strong> Struggled with high-frequency noise and transparency artifacts.</li>
+            </ul>
+
+            <h3>Method B: CycleGAN (Unpaired Translation)</h3>
+            <p>
+                We trained a CycleGAN to learn the mapping between the domain of "Pixel Sprites" and "Digital Art" without 
+                paired training examples.
+            </p>
+            <ul>
+                <li><strong>Architecture:</strong> ResNet-based Generator with 9 residual blocks and a PatchGAN Discriminator.</li>
+                <li><strong>Training:</strong> Uses Cycle Consistency Loss to ensure the image can be translated back to its original form, preserving structure.</li>
+            </ul>
+
+            <h3>Method C: Stable Diffusion (Latent Diffusion)</h3>
+            <p>
+                Our final approach leveraged a Latent Diffusion Model (LDM). We used the <code>StableDiffusionImg2ImgPipeline</code> 
+                to guide the generation using both the pixel fusion (as the init image) and a text prompt.
+            </p>
+            <ul>
+                <li><strong>Configuration:</strong> Strength 0.75, Guidance Scale 7.5.</li>
+                <li><strong>Advantage:</strong> The model "hallucinates" realistic details (fur, lighting, 3D form) that are not present in the original pixels.</li>
+            </ul>
+        </section>
+
+        <section id="code">
+            <h2>System Architecture & Code Structure</h2>
+            <p>The project is modularized into the following key components:</p>
+
+            <div class="code-box">
+                <span class="code-title">style_transfer.py</span>
+                Implements the VGG19 optimization loop. Features a custom <code>TVLoss</code> class to reduce pixel noise and a normalization module to handle ImageNet stats.
+            </div>
+
+            <div class="code-box">
+                <span class="code-title">cyclegan_train.py & cyclegan_gen.py</span>
+                Contains the <code>GeneratorResNet</code> and <code>Discriminator</code> (PatchGAN) classes. Implements the training loop with Replay Buffers to stabilize GAN training.
+            </div>
+
+            <div class="code-box">
+                <span class="code-title">fusion_server.py</span>
+                A Flask-based backend that serves the Web UI. It loads the <code>StableDiffusionImg2ImgPipeline</code> on CUDA/MPS and handles requests to fuse uploaded images via API.
+            </div>
+        </section>
+
+        <section id="comparison">
+            <h2>Comparative Results</h2>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>VGG19 NST</th>
+                        <th>CycleGAN</th>
+                        <th>Stable Diffusion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Structure Preservation</strong></td>
+                        <td>High (Too rigid)</td>
+                        <td>Medium</td>
+                        <td>High (Adjustable)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Texture Quality</strong></td>
+                        <td>Low (Noisy)</td>
+                        <td>Medium (Patterned)</td>
+                        <td>Very High (Realistic)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Inference Time</strong></td>
+                        <td>Slow (Iterative)</td>
+                        <td>Fast (One-pass)</td>
+                        <td>Medium (Diffusion steps)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Overall Aesthetic</strong></td>
+                        <td>"Dirty" / Abstract</td>
+                        <td>Stylized</td>
+                        <td>Polished / 3D</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="figure">
+                <img src="https://via.placeholder.com/800x400?text=Comparison:+VGG19+vs+CycleGAN+vs+Stable+Diffusion" alt="Visual Comparison">
+                <div class="caption">Figure 1: Visual comparison of the three implemented methods on the same input fusion.</div>
+            </div>
+        </section>
+
+        <section id="discussion">
+            <h2>Discussion & Findings</h2>
+            
+            <h3>The Frequency Mismatch Problem</h3>
+            <p>
+                Our initial experiments with VGG19 confirmed that standard style transfer struggles with pixel art. 
+                Pixel sprites are "low-frequency" images (flat colors), while VGG19 is trained on "high-frequency" photos (ImageNet). 
+                The model failed to find features to latch onto, resulting in noise.
+            </p>
+
+            <h3>The Superiority of Latent Diffusion</h3>
+            <p>
+                We found that <strong>Stable Diffusion (Method C)</strong> provided the best results for this specific task. 
+                Because it operates in latent space and utilizes a text prompt (e.g., <em>"anime style, detailed, 3D render"</em>), 
+                it acts as a "semantic upscaler." It understands what the blob of pixels <em>represents</em> and fills in the missing details 
+                that VGG19 could not invent.
+            </p>
+        </section>
+
+        <footer>
+            <p>CS 566 Course Project | Fall 2025</p>
+        </footer>
+    </main>
+
+    <script>
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>
