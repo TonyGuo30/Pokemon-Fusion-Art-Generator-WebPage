@@ -166,7 +166,7 @@
         }
 
         .figure img {
-            width: 75%; /* shrink images relative to the figure container */
+            width: 80%; /* shrink images relative to the figure container */
             max-width: 100%;
             height: auto;
             background-color: #eee;
@@ -174,6 +174,12 @@
             display: block;
             margin: 0 auto;
         }
+
+        .figure-small {
+            width: 40%;   /* or any size you prefer */
+            max-width: 100%;
+        }
+
 
         .caption {
             margin-top: 10px;
@@ -202,6 +208,7 @@
             <li><a href="#code">System Architecture</a></li>
             <li><a href="#comparison">Comparative Results</a></li>
             <li><a href="#discussion">Findings & Future Work</a></li>
+            <li><a href="#refs">References</a></li>
         </ul>
     </nav>
 
@@ -576,12 +583,12 @@
             </p>
 
             <div class="figure">
-                <img src="Figure_3.png" 
+                <img class="figure-small" src="Figure_3.png" 
                     alt="CycleGAN pattern artifacts and NST noisy background failure cases">
                 <div class="caption">
                     Figure 3: Common Failure Cases. On the left, a CycleGAN-generated image of
-                    Bulbasaur exhibits checkerboard pattern artifacts. On the right, an
-                    NST-generated image of Charmander is overwhelmed by a noisy, grainy background.
+                    Bulbasaur exhibits checkerboard pattern artifacts. On the right, an NST-generated 
+                    image of Charmander is overwhelmed by a noisy, grainy background.
                 </div>
             </div>
 
@@ -609,6 +616,19 @@
                 details that are impossible to obtain with fixed VGG19 features or an unpaired CycleGAN alone.
             </p>
 
+            <h3>Key Findings</h3>
+            <ul>
+                <li>Rule-based Stage 1 fusion plus palette harmonization already removes most obvious
+                    color clashes and produces coherent fused sprites.</li>
+                <li>Standard VGG19 NST is poorly matched to low-resolution sprite inputs and tends
+                    to create noisy or “dirty” textures.</li>
+                <li>CycleGAN can learn a sprite→art mapping, but training is unstable and sometimes
+                    introduces checkerboard or pattern artifacts.</li>
+                <li>Stable Diffusion, even without fine-tuning, gives the most polished results by
+                    acting as a semantic upscaler guided by text prompts.</li>
+            </ul>
+
+
             <h3>Future Work</h3>
             <ul>
                 <li>
@@ -629,11 +649,24 @@
             </ul>
         </section>
 
+        <section id="refs">
+        <h2>References</h2>
+            <p>[1] Gatys, Ecker, Bethge. “A Neural Algorithm of Artistic Style.” 2015.</p>
+            <p>[2] Zhu et al. “Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial Networks.” 2017.</p>
+            <p>[3] Rombach et al. “High-Resolution Image Synthesis with Latent Diffusion Models.” 2022.</p>
+        </section>
+
+
         <footer>
             <p>CS 566 Course Project | Fall 2025</p>
             <p>
                 <a href="https://github.com/TonyGuo30/Pokemon-Fusion-Art-Generator" target="_blank" rel="noopener noreferrer">
                     GitHub Link to our project
+                </a>
+            </p>
+            <p>
+                <a href="" target="_blank" rel="noopener noreferrer">
+                    Demo Presentation Link to our project
                 </a>
             </p>
         </footer>
