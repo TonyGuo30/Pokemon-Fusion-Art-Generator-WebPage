@@ -197,7 +197,7 @@
         <ul>
             <li><a href="#overview">Overview</a></li>
             <li><a href="#pipeline">The Pipeline</a></li>
-            <li><a href="#methods">Methodologies (3)</a></li>
+            <li><a href="#methods">Methodologies</a></li>
             <li><a href="#code">System Architecture</a></li>
             <li><a href="#comparison">Comparative Results</a></li>
             <li><a href="#discussion">Findings & Future Work</a></li>
@@ -219,10 +219,25 @@
 
             <h3>Motivation</h3>
             <p>
-                Fan-made Pokémon fusions are popular, but most tools simply copy–paste sprite parts together.
-                The results often look visually inconsistent: color palettes clash, shading is broken, and
-                silhouettes are awkward. At the same time, state-of-the-art generative models like Stable Diffusion
-                can create stunning artwork—but they are rarely connected to carefully designed sprite-level logic.
+                Fan-made Pokémon fusions are everywhere online, but most tools work by literally
+                copy-pasting sprite parts: cut the head from one Pokémon, glue it onto the body
+                of another, maybe recolor a few pixels by hand, and call it done. The results are
+                often charming but visually inconsistent - color palettes clash, shading directions
+                disagree, and silhouettes can look unintentionally “broken.”
+            </p>
+            <p>
+                At the same time, state-of-the-art generative models such as Stable Diffusion can
+                produce stunning anime-style monsters, but they know nothing about the underlying
+                sprite logic that fans care about (which parts came from which parent, what counts
+                as a “valid” Pokémon pose, etc.). There is a gap between <em>structure-aware</em>
+                fusion tools and <em>style-rich</em> generative models.
+            </p>
+            <p>
+                Our project aims to bridge this gap. We first build a deterministic, rule-based
+                fusion algorithm that respects sprite composition and color harmony, and then
+                systematically explore three deep learning approaches (VGG19 NST, CycleGAN,
+                and Stable Diffusion) to see which ones can lift those fusions into high-fidelity
+                art without losing the underlying Pokémon-like structure.
             </p>
             <p>
                 Our goal is to build a system that respects both sides: 
@@ -316,6 +331,36 @@
                     <em>“anime style, detailed, 3D render”</em>.
                 </li>
             </ul>
+
+            <h3>Dataset & Preprocessing</h3>
+            <p>
+                For this course project we use Pokémon images as the source domain and several
+                art styles as target domains. For CycleGAN, the dataset is organized into a
+                standard unpaired image-to-image layout under <code>dataset/</code>: 
+                <code>dataset/trainA</code> contains Pokémon images (content domain) and 
+                <code>dataset/trainB</code> contains artworks in the target style. The three
+                styles we experimented with are Studio Ghibli anime art, Pointillism paintings,
+                and Ukiyo-e woodblock prints, each stored in its own project folder with a
+                separate <code>model/</code>, <code>content/</code>, and <code>result/</code>
+                directory structure.
+            </p>
+            <p>
+                For VGG19 Neural Style Transfer, we follow a simpler directory layout:
+                <code>content_images/</code> stores input photos or fused sprites,
+                <code>style_images/</code> stores the reference artworks, and
+                <code>output_images/</code> contains all generated results. The script
+                <code>style_transfer.py</code> iterates over every combination of content
+                and style image and writes the stylized outputs into the corresponding
+                subfolders.
+            </p>
+            <p>
+                Across all methods, we resize images to a fixed square resolution (e.g.,
+                256&nbsp;x&nbsp;256), composite transparent PNG sprites onto a solid
+                background color, and normalize pixel values to the ranges expected by each
+                model (ImageNet mean/std for VGG19, <code>[-1, 1]</code> for CycleGAN, and
+                <code>[0, 1]</code> for Stable Diffusion). All datasets are used strictly
+                for CS&nbsp;566 coursework and are not redistributed.
+            </p>
 
             <h3>Method A: VGG19 Neural Style Transfer</h3>
             <p>
@@ -430,7 +475,7 @@
                 <span class="code-title">cyclegan_gen.py</span>
                 Loads each saved <code>G_AB_*.pth</code> model in turn and runs batch inference over
                 input sprites in <code>content/</code>. Outputs are grouped by epoch to compare how
-                the generator’s style changes throughout training.
+                the generator's style changes throughout training.
             </div>
 
             <div class="code-box">
@@ -501,7 +546,7 @@
             </table>
 
             <div class="figure">
-                <img src="https://via.placeholder.com/800x400?text=Comparison:+VGG19+vs+CycleGAN+vs+Stable+Diffusion" alt="Visual Comparison">
+                <img src="Figure_2.png" alt="High-Level Project Pipeline">
                 <div class="caption">
                     Figure 2: Example fusions from the three methods on the same Stage 1 sprite input.
                 </div>
@@ -528,6 +573,16 @@
                 that small tweaks to the learning rate or normalization strategy can substantially change the
                 behavior of the generators and discriminators.
             </p>
+
+            <div class="figure">
+                <img src="Figure_3.png" 
+                    alt="CycleGAN pattern artifacts and NST noisy background failure cases">
+                <div class="caption">
+                    Figure 3: Common Failure Cases. On the left, a CycleGAN-generated image of
+                    Bulbasaur exhibits checkerboard pattern artifacts. On the right, an
+                    NST-generated image of Charmander is overwhelmed by a noisy, grainy background.
+                </div>
+            </div>
 
             <h3>Practical Challenges</h3>
             <ul>
