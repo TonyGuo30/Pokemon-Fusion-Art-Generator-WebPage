@@ -166,7 +166,7 @@
         }
 
         .figure img {
-            width: 80%; /* shrink images relative to the figure container */
+            width: 80%; /* default figure image width */
             max-width: 100%;
             height: auto;
             background-color: #eee;
@@ -175,9 +175,11 @@
             margin: 0 auto;
         }
 
-        .figure-small {
-            width: 40%;   /* or any size you prefer */
-            max-width: 100%;
+        /* Use this class on specific figures you want smaller */
+        .figure.figure-small img {
+            width: 60%;
+            max-width: 600px;
+            min-height: 0;
         }
 
 
@@ -206,7 +208,7 @@
             <li><a href="#pipeline">The Pipeline</a></li>
             <li><a href="#methods">Methodologies</a></li>
             <li><a href="#code">System Architecture</a></li>
-            <li><a href="#comparison">Comparative Results</a></li>
+            <li><a href="#comparison">Results</a></li>
             <li><a href="#discussion">Findings & Future Work</a></li>
             <li><a href="#refs">References</a></li>
         </ul>
@@ -293,7 +295,42 @@
                     Where two parts meet, we use edge-aware feathering to soften seams. We also enforce a
                     single, consistent “light direction” for the sprite to avoid conflicting highlights and shadows.
                 </li>
+                <li>
+                    <strong>Stable Diffusion:</strong>
+                    For Stable Diffusion, we do not train anything from scratch. Instead, we use a pre-trained
+                    image-to-image pipeline and combine the fused sprite with text prompts such as 
+                    <em>“anime style, detailed, 3D render”</em>.
+                </li>
             </ul>
+
+            <h3>Method: Stable Diffusion (Latent Diffusion)</h3>
+            <p>
+                Our final method uses a pre-trained Latent Diffusion Model, <strong>Stable Diffusion</strong>, in
+                image-to-image mode. Rather than optimizing pixels from scratch or training a GAN, we treat the fused
+                sprite as a noisy “hint” and let the model generate an image consistent with both the sprite and
+                a text prompt.
+            </p>
+            <ul>
+                <li>
+                    <strong>Configuration:</strong> 
+                    Using <code>StableDiffusionImg2ImgPipeline</code>, we control two key hyperparameters:
+                    <em>strength</em> (how much to deviate from the input sprite) and
+                    <em>guidance scale</em> (how strongly the text prompt steers the image).
+                </li>
+                <li>
+                    <strong>CLI & backend usage:</strong> 
+                    The script <code>ai_fusion.py</code> allows us to run fusions from the command line
+                    (two image paths in, one fusion image out), while <code>fusion_server.py</code> exposes a Flask API 
+                    so that the web UI can send sprite pairs and get back rendered fusions.
+                </li>
+                <li>
+                    <strong>Observed behavior:</strong> 
+                    Stable Diffusion tends to produce the most visually appealing results. It can add shading, volume and
+                    texture (fur, scales, reflections) that are not present in the original sprites, while still
+                    roughly preserving the fused creature's silhouette.
+                </li>
+            </ul>
+
             <p>
                 This produces a fused pixel-art sprite that still “reads” as a Pokémon: clear outline, consistent
                 palette, and a plausible silhouette. The output of Stage 1 becomes the content input for Stage 2.
@@ -308,7 +345,7 @@
         </section>
 
         <section id="methods">
-            <h2>Stage 2 Methodologies: A Comparative Study</h2>
+            <h3>Stage 2 Methodologies: A Comparative Study</h3>
             <p>
                 In Stage 2, we explore three different families of models to “upscale” the fused sprite into
                 higher fidelity art. For each method, we treat the Stage 1 fusion as a content signal and try
@@ -324,19 +361,13 @@
                     <strong>VGG19 Neural Style Transfer:</strong>
                     A folder of fused sprites (<code>content_images/</code>) and a small library of style
                     references (<code>style_images/</code>, e.g., anime art, paintings). We run NST for all
-                    style–content combinations to systematically inspect failure modes.
+                    style-content combinations to systematically inspect failure modes.
                 </li>
                 <li>
                     <strong>CycleGAN:</strong>
                     An unpaired dataset with <code>trainA/</code> (pixel sprites) and <code>trainB/</code> 
                     (target digital art style). No one-to-one pairing is assumed, so the model must learn the
                     mapping “sprite → art” only from distribution statistics.
-                </li>
-                <li>
-                    <strong>Stable Diffusion:</strong>
-                    For Stable Diffusion, we do not train anything from scratch. Instead, we use a pre-trained
-                    image-to-image pipeline and combine the fused sprite with text prompts such as 
-                    <em>“anime style, detailed, 3D render”</em>.
                 </li>
             </ul>
 
@@ -425,34 +456,6 @@
                     repetitive patterns or over-smooths small details like eyes and fingers.
                 </li>
             </ul>
-
-            <h3>Method C: Stable Diffusion (Latent Diffusion)</h3>
-            <p>
-                Our final method uses a pre-trained Latent Diffusion Model, <strong>Stable Diffusion</strong>, in
-                image-to-image mode. Rather than optimizing pixels from scratch or training a GAN, we treat the fused
-                sprite as a noisy “hint” and let the model generate an image consistent with both the sprite and
-                a text prompt.
-            </p>
-            <ul>
-                <li>
-                    <strong>Configuration:</strong> 
-                    Using <code>StableDiffusionImg2ImgPipeline</code>, we control two key hyperparameters:
-                    <em>strength</em> (how much to deviate from the input sprite) and
-                    <em>guidance scale</em> (how strongly the text prompt steers the image).
-                </li>
-                <li>
-                    <strong>CLI & backend usage:</strong> 
-                    The script <code>ai_fusion.py</code> allows us to run fusions from the command line
-                    (two image paths in, one fusion image out), while <code>fusion_server.py</code> exposes a Flask API 
-                    so that the web UI can send sprite pairs and get back rendered fusions.
-                </li>
-                <li>
-                    <strong>Observed behavior:</strong> 
-                    Stable Diffusion tends to produce the most visually appealing results. It can add shading, volume and
-                    texture (fur, scales, reflections) that are not present in the original sprites, while still
-                    roughly preserving the fused creature’s silhouette.
-                </li>
-            </ul>
         </section>
 
         <section id="code">
@@ -509,60 +512,126 @@
         </section>
 
         <section id="comparison">
-            <h2>Comparative Results</h2>
-            <p>
-                We qualitatively compare the three methods along four dimensions: structure preservation,
-                texture quality, inference time, and overall aesthetic. The fused sprites from Stage 1 are
-                used as the common input across all methods.
-            </p>
-            
-            <table>
-                <thead>
-                    <tr>
-                        <th>Feature</th>
-                        <th>VGG19 NST</th>
-                        <th>CycleGAN</th>
-                        <th>Stable Diffusion</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>Structure Preservation</strong></td>
-                        <td>High (but rigid and sometimes distorted during optimization)</td>
-                        <td>Medium (good outlines but occasional warping)</td>
-                        <td>High (can be tuned via strength)</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Texture Quality</strong></td>
-                        <td>Low (noisy, “dirty” textures on flat regions)</td>
-                        <td>Medium (stylized but sometimes repetitive patterns)</td>
-                        <td>Very High (rich shading, materials, lighting)</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Inference Time</strong></td>
-                        <td>Slow (hundreds of optimization steps per image)</td>
-                        <td>Fast (one forward pass after training)</td>
-                        <td>Medium (tens of diffusion steps per image)</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Overall Aesthetic</strong></td>
-                        <td>Abstract, often messy</td>
-                        <td>Stylized but inconsistent</td>
-                        <td>Polished, “finished” illustrations</td>
-                    </tr>
-                </tbody>
-            </table>
+        <h2>Results</h2>
 
-            <div class="figure">
-                <img src="Figure_2.png" alt="High-Level Project Pipeline">
-                <div class="caption">
-                    Figure 2: Example fusions from the three methods on the same Stage 1 sprite input.
-                </div>
+        <h3>VGG19 NST Results</h3>
+        <p>
+            When we apply VGG19 Neural Style Transfer to sprite inputs, the model often struggles.
+            On high-resolution photographic content, NST produces the expected painterly textures,
+            but on our low-resolution Pokémon sprites it tends to inject noisy, “dirty” patterns
+            into flat regions and soften important outlines. Even after tuning the style/content
+            weights and adding TV loss, many outputs look visually messy rather than polished.
+        </p>
+        <div class="figure figure-small">
+            <img src="Figure_2.png" alt="Example VGG19 NST outputs on Pokémon sprites">
+            <div class="caption">
+                Figure 2: Example VGG19 NST results on Pokémon sprites. Flat regions pick up noisy texture
+                and outlines become softer than in the original sprites.
             </div>
-        </section>
+        </div>
+
+        <h3>CycleGAN Results</h3>
+        <p>
+            CycleGAN performs better at redrawing sprites into the target art domain. It typically preserves
+            the rough silhouette and large-scale color layout while adding smoother shading and materials.
+            However, training is unstable: some checkpoints produce over-smoothed images, and others exhibit
+            strong checkerboard or tiling artifacts, especially in the background and on large flat surfaces.
+            These pattern artifacts are a clear visual failure mode of the model.
+        </p>
+        <!-- You already have the Bulbasaur failure figure as Figure 3 in Discussion,
+            so you can either leave this without an image or reuse a different one here. -->
+
+        <h3>Stable Diffusion Fusion Results</h3>
+        <p>
+            Stable Diffusion, used in image-to-image mode, generally produces the most appealing final art.
+            Given a fused sprite and an anime-style prompt, it adds consistent lighting, volume and surface
+            detail while still roughly respecting the fused creature's pose and proportions. Unlike NST and
+            CycleGAN, which are tightly bound to their training distributions, the diffusion model can also
+            interpret prompts (e.g., “more menacing”, “soft lighting”) to change the mood of the result.
+            The main trade-off is that very high strength values can drift too far from the original fusion.
+        </p>
+        <div class="figure">
+            <img src="Figure_4.png" alt="Example Stable Diffusion fusion outputs">
+            <div class="caption">
+                Figure 4: Example Stable Diffusion results. The model adds
+                shading and detail while keeping the overall creature identity recognizable.
+            </div>
+        </div>
+
+        <h3>Overall Comparison</h3>
+        <p>
+            Qualitatively, we can summarize the three methods along four axes: structure preservation,
+            texture quality, inference time, and perceived aesthetic quality. VGG19 NST preserves structure
+            but introduces heavy noise; CycleGAN can redraw sprites in the target style but sometimes adds
+            artifacts; Stable Diffusion offers the best overall visual quality at the cost of more complex
+            control over prompts and strength.
+        </p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Feature</th>
+                    <th>VGG19 NST</th>
+                    <th>CycleGAN</th>
+                    <th>Stable Diffusion</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Structure Preservation</strong></td>
+                    <td>High (but rigid and sometimes distorted during optimization)</td>
+                    <td>Medium (good outlines but occasional warping)</td>
+                    <td>High (can be tuned via strength)</td>
+                </tr>
+                <tr>
+                    <td><strong>Texture Quality</strong></td>
+                    <td>Low (noisy, “dirty” textures on flat regions)</td>
+                    <td>Medium (stylized but sometimes repetitive patterns)</td>
+                    <td>Very High (rich shading, materials, lighting)</td>
+                </tr>
+                <tr>
+                    <td><strong>Inference Time</strong></td>
+                    <td>Slow (hundreds of optimization steps per image)</td>
+                    <td>Fast (one forward pass after training)</td>
+                    <td>Medium (tens of diffusion steps per image)</td>
+                </tr>
+                <tr>
+                    <td><strong>Overall Aesthetic</strong></td>
+                    <td>Abstract, often messy</td>
+                    <td>Stylized but inconsistent</td>
+                    <td>Polished, “finished” illustrations</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="figure">
+            <img src="Figure_5.png" alt="Side-by-side comparison of the three methods">
+            <div class="caption">
+                Figure 5: Side-by-side comparison of VGG19 NST, CycleGAN, and Stable Diffusion
+                on the same fused sprite input.
+            </div>
+        </div>
+    </section>
 
         <section id="discussion">
             <h2>Discussion, Problems Encountered & Future Work</h2>
+
+            <h3>Impact of Fusion Quality on Style Transfer</h3>
+                <p>
+                    During implementation we also noticed that our Stage&nbsp;1 fused sprites are visibly
+                    rougher than the original, hand-crafted Pokémon sprites: edges are less clean and some
+                    parts look slightly off-model. When we fed these rough fusions directly into VGG19
+                    style transfer, the imperfections were often amplified - noisy backgrounds and
+                    broken outlines became even more noticeable after stylization.
+                </p>
+                <p>
+                    To disentangle issues caused by the models from issues caused by our fusion stage,
+                    we therefore also ran style transfer experiments on <em>original</em> Pokémon sprites
+                    without fusion. These runs generally produced cleaner results, confirming that the
+                    quality of the content input is an important bottleneck. In other words, even a
+                    strong style-transfer model cannot fully “fix” a low-quality fusion; both stages
+                    have to be reasonably good for the final art to look polished.
+                </p>
             
             <h3>The Frequency Mismatch Problem</h3>
             <p>
@@ -582,9 +651,8 @@
                 behavior of the generators and discriminators.
             </p>
 
-            <div class="figure">
-                <img class="figure-small" src="Figure_3.png" 
-                    alt="CycleGAN pattern artifacts and NST noisy background failure cases">
+            <div class="figure figure-small">
+                <img src="Figure_3.png" alt="CycleGAN pattern artifacts and NST noisy background failure cases">
                 <div class="caption">
                     Figure 3: Common Failure Cases. On the left, a CycleGAN-generated image of
                     Bulbasaur exhibits checkerboard pattern artifacts. On the right, an NST-generated 
