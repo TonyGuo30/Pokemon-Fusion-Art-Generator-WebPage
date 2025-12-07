@@ -142,18 +142,38 @@
         /* Comparison Table */
         table {
             width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            background: white;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 24px 0;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
+            overflow: hidden;
         }
         th, td {
-            border: 1px solid #ddd;
-            padding: 12px;
+            padding: 14px 16px;
             text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+            color: #222224;
+            font-size: 0.98rem;
         }
         th {
-            background-color: var(--secondary-color);
-            color: white;
+            background: linear-gradient(90deg, #b80f0f, #ee1515);
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 0.85rem;
+            border-bottom: none;
+        }
+        tbody tr:nth-child(even) td {
+            background: #f9f9fb;
+        }
+        tbody tr:hover td {
+            background: #fff1f1;
+            transition: background 0.2s ease;
+        }
+        tbody tr:last-child td {
+            border-bottom: none;
         }
 
         /* Image Placeholders */
